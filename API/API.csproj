@@ -18,6 +18,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="DTOs\" />
+    <Folder Include="Errors\" />
+    <Folder Include="Middleware\" />
     <Folder Include="RequestHelpers\" />
   </ItemGroup>
 
