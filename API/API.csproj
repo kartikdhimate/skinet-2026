@@ -20,6 +20,7 @@
   <ItemGroup>
     <Folder Include="DTOs\" />
     <Folder Include="Errors\" />
+    <Folder Include="Extensions\" />
     <Folder Include="Middleware\" />
     <Folder Include="RequestHelpers\" />
   </ItemGroup>
