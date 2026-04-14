@@ -1,5 +1,6 @@
 using Core.Entities;
 using Core.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Data;
 
@@ -16,7 +17,7 @@ public class SpecificationEvaluator<T> where T : BaseEntity
         {
             query = query.OrderBy(spec.OrderBy);
         }
-        
+
         if (spec.OrderByDescending != null)
         {
             query = query.OrderByDescending(spec.OrderByDescending);
@@ -31,6 +32,10 @@ public class SpecificationEvaluator<T> where T : BaseEntity
         {
             query = query.Skip(spec.Skip).Take(spec.Take);
         }
+
+        query = spec.Includes.Aggregate(query, (current, include) => current.Include(include));
+
+        query = spec.IncludeStrings.Aggregate(query, (current, include) => current.Include(include));
 
         return query;
     }
@@ -47,7 +52,7 @@ public class SpecificationEvaluator<T> where T : BaseEntity
         {
             query = query.OrderBy(spec.OrderBy);
         }
-        
+
         if (spec.OrderByDescending != null)
         {
             query = query.OrderByDescending(spec.OrderByDescending);
@@ -55,7 +60,7 @@ public class SpecificationEvaluator<T> where T : BaseEntity
 
         var selectQuery = query as IQueryable<TResult>;
 
-        if(spec.Select != null)
+        if (spec.Select != null)
         {
             selectQuery = query.Select(spec.Select);
         }
