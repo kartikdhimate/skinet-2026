@@ -3,12 +3,13 @@ import { inject, Injectable } from '@angular/core';
 import { Product } from '../../shared/models/products';
 import { Pagination } from '../../shared/models/pagination';
 import { ShopParams } from '../../shared/models/shopParams';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ShopService {
-  baseUrl = 'https://localhost:5001/api/';
+  baseUrl = environment.apiUrl;
   private http = inject(HttpClient);
   types: string[] = [];
   brands: string[] = [];
@@ -16,19 +17,19 @@ export class ShopService {
   getProducts(shopParams: ShopParams) {
     let params = new HttpParams();
 
-    if(shopParams.brands.length > 0){
+    if (shopParams.brands.length > 0) {
       params = params.append('brands', shopParams.brands.join(','));
     }
-    
-    if(shopParams.types.length > 0){
+
+    if (shopParams.types.length > 0) {
       params = params.append('types', shopParams.types.join(','));
     }
 
-    if(shopParams.sort){
+    if (shopParams.sort) {
       params = params.append('sort', shopParams.sort);
     }
 
-    if(shopParams.search){
+    if (shopParams.search) {
       params = params.append('search', shopParams.search);
     }
 
@@ -43,7 +44,7 @@ export class ShopService {
   }
 
   getBrands() {
-    if(this.brands.length > 0)
+    if (this.brands.length > 0)
       return;
 
     return this.http.get<string[]>(this.baseUrl + 'products/brands').subscribe({
@@ -52,9 +53,9 @@ export class ShopService {
   }
 
   getTypes() {
-    if(this.types.length > 0)
+    if (this.types.length > 0)
       return;
-    
+
     return this.http.get<string[]>(this.baseUrl + 'products/types').subscribe({
       next: (response) => (this.types = response),
     });
