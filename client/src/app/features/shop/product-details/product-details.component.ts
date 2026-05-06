@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { ShopService } from '../../../core/services/shop.service';
 import { ActivatedRoute } from '@angular/router';
 import { Product } from '../../../shared/models/products';
@@ -31,7 +31,7 @@ export class ProductDetailsComponent implements OnInit {
   private activatedRoute = inject(ActivatedRoute);
   private cartService = inject(CartService);
 
-  product?: Product;
+  product = signal<Product | undefined>(undefined);
   quantityInCart = 0;
   quantity = 1;
 
@@ -41,11 +41,11 @@ export class ProductDetailsComponent implements OnInit {
 
   loadProduct() {
     const id = this.activatedRoute.snapshot.paramMap.get('id');
-    if(!id) return;
+    if (!id) return;
 
     this.shopService.getProduct(+id).subscribe({
       next: product => {
-        this.product = product;
+        this.product.set(product);
         this.updateQuantityInCart();
       },
       error: error => console.log(error),
@@ -53,21 +53,22 @@ export class ProductDetailsComponent implements OnInit {
   }
 
   updateCart() {
-    if(!this.product) return;
+    const product = this.product();
+    if (!product) return;
 
-    if(this.quantity > this.quantityInCart) {
+    if (this.quantity > this.quantityInCart) {
       const quantityToAdd = this.quantity - this.quantityInCart;
       this.quantityInCart += quantityToAdd;
-      this.cartService.addItemToCart(this.product, quantityToAdd);
+      this.cartService.addItemToCart(product, quantityToAdd);
     } else {
       const quantityToRemove = this.quantityInCart - this.quantity;
       this.quantityInCart -= quantityToRemove;
-      this.cartService.removeItemFromCart(this.product.id, quantityToRemove);
+      this.cartService.removeItemFromCart(product.id, quantityToRemove);
     }
   }
 
   updateQuantityInCart() {
-    this.quantityInCart = this.cartService.cart()?.items.find(i => i.productId === this.product?.id)?.quantity || 0;
+    this.quantityInCart = this.cartService.cart()?.items.find(i => i.productId === this.product()?.id)?.quantity || 0;
     this.quantity = this.quantityInCart || 1;
   }
 

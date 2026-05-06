@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { Product } from '../../shared/models/products';
 import { ShopService } from '../../core/services/shop.service';
 import { ProductItemComponent } from "./product-item/product-item.component";
@@ -28,7 +28,7 @@ import { EmptyStateComponent } from "../../shared/components/empty-state/empty-s
     FormsModule,
     MatIconButton,
     EmptyStateComponent
-],
+  ],
   templateUrl: './shop.component.html',
   styleUrl: './shop.component.css',
 })
@@ -37,11 +37,11 @@ export class ShopComponent implements OnInit {
   private dialogService = inject(MatDialog);
 
   title = 'Skinet';
-  products?: Pagination<Product>;
+  products? = signal<Pagination<Product> | undefined>(undefined);
   sortoptions = [
-    {name: 'Alphabetical', value: 'name'},
-    {name: 'Price: Low-High', value: 'priceAsc'},
-    {name: 'Price: High-Low', value: 'priceDesc'},
+    { name: 'Alphabetical', value: 'name' },
+    { name: 'Price: Low-High', value: 'priceAsc' },
+    { name: 'Price: High-Low', value: 'priceDesc' },
   ]
   shopParams = new ShopParams();
   pageSizeOptions = [5, 10, 15, 20];
@@ -56,32 +56,32 @@ export class ShopComponent implements OnInit {
     this.getProducts();
   }
 
-  resetFilters(){
+  resetFilters() {
     this.shopParams = new ShopParams();
     this.getProducts();
   }
 
-  getProducts(){
+  getProducts() {
     this.shopService.getProducts(this.shopParams).subscribe({
-      next: response => this.products = response,
+      next: response => this.products?.set(response),
       error: error => console.log(error)
     });
   }
 
-  onSearchChange(){
+  onSearchChange() {
     this.shopParams.pageNumber = 1;
     this.getProducts();
   }
 
-  handlePageEvent(event: PageEvent){
+  handlePageEvent(event: PageEvent) {
     this.shopParams.pageNumber = event.pageIndex + 1;
     this.shopParams.pageSize = event.pageSize;
     this.getProducts();
   }
 
-  onSortChange(event: MatSelectionListChange){
+  onSortChange(event: MatSelectionListChange) {
     const selectedoption = event.options[0];
-    if(selectedoption){
+    if (selectedoption) {
       this.shopParams.sort = selectedoption.value;
       this.shopParams.pageNumber = 1;
       this.getProducts();
@@ -98,7 +98,7 @@ export class ShopComponent implements OnInit {
     });
     diaglogRef.afterClosed().subscribe({
       next: result => {
-        if(result){
+        if (result) {
           this.shopParams.brands = result.selectedBrands;
           this.shopParams.types = result.selectedTypes;
           this.shopParams.pageNumber = 1;
