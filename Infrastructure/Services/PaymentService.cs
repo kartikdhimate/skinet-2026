@@ -6,13 +6,21 @@ using Product = Core.Entities.Product;
 
 namespace Infrastructure.Services;
 
-public class PaymentService(IConfiguration config, ICartService cartService,
-    IUnitOfWork unitOfWork) : IPaymentService
+public class PaymentService : IPaymentService
 {
+    private readonly ICartService cartService;
+    private readonly IUnitOfWork unitOfWork;
+
+    public PaymentService(IConfiguration config, ICartService cartService,
+    IUnitOfWork unitOfWork)
+    {
+        this.cartService = cartService;
+        this.unitOfWork = unitOfWork;
+        StripeConfiguration.ApiKey = config["StripeSettings:SecretKey"];
+    }
+
     public async Task<ShoppingCart?> CreateOrUpdatePaymentIntent(string cartId)
     {
-        StripeConfiguration.ApiKey = config["StripeSettings:SecretKey"];
-
         var cart = await cartService.GetCartAsync(cartId);
 
         if (cart == null)
@@ -20,22 +28,22 @@ public class PaymentService(IConfiguration config, ICartService cartService,
 
         var shippingPrice = 0m;
 
-        if(cart.DeliveryMethodId.HasValue)
+        if (cart.DeliveryMethodId.HasValue)
         {
             var deliveryMethod = await unitOfWork.Repository<DeliveryMethod>().GetByIdAsync(cart.DeliveryMethodId.Value);
-            if(deliveryMethod == null)
+            if (deliveryMethod == null)
                 return null;
-            
+
             shippingPrice = deliveryMethod.Price;
         }
 
-        foreach(var item in cart.Items)
+        foreach (var item in cart.Items)
         {
             var productItem = await unitOfWork.Repository<Product>().GetByIdAsync(item.ProductId);
-            if(productItem == null)
+            if (productItem == null)
                 return null;
-            
-            if(item.Price != productItem.Price)
+
+            if (item.Price != productItem.Price)
             {
                 item.Price = productItem.Price;
             }
@@ -50,7 +58,7 @@ public class PaymentService(IConfiguration config, ICartService cartService,
             {
                 // Multiply by 100 because Stripe expects the amount in smallest currency unit (e.g., cents for USD)
                 // We are using decimal for price in our application, so we need to convert it to long (integer) for Stripe
-                Amount = (long)cart.Items.Sum(x=>x.Quantity* (x.Price*100)) + (long)shippingPrice *100,
+                Amount = (long)cart.Items.Sum(x => x.Quantity * (x.Price * 100)) + (long)shippingPrice * 100,
                 Currency = "usd",
                 PaymentMethodTypes = ["card"]
             };
@@ -71,5 +79,18 @@ public class PaymentService(IConfiguration config, ICartService cartService,
         await cartService.SetCartAsync(cart);
 
         return cart;
+    }
+
+    public async Task<string> RefundPayment(string paymentIntentId)
+    {
+        var refundOptions = new RefundCreateOptions
+        {
+            PaymentIntent = paymentIntentId
+        };
+
+        var refundService = new RefundService();
+        var refund = await refundService.CreateAsync(refundOptions);
+
+        return refund.Status;
     }
 }

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-public class BuggyController: BaseApiController
+public class BuggyController : BaseApiController
 {
     [HttpGet("unauthorized")]
     public IActionResult GetUnauthorized()
@@ -45,5 +45,22 @@ public class BuggyController: BaseApiController
         var name = User.FindFirst(ClaimTypes.Name)?.Value;
         var id = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         return Ok("Hello " + name + " with id " + id);
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("admin-secret")]
+    public IActionResult GetAdminSecret()
+    {
+        var name = User.FindFirst(ClaimTypes.Name)?.Value;
+        var id = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var isAdmin = User.IsInRole("Admin");
+        var roles = User.FindFirstValue(ClaimTypes.Role);
+        return Ok(new
+        {
+            name,
+            id,
+            isAdmin,
+            roles
+        });
     }
 }

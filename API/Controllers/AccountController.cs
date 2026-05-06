@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using API.DTOs;
 using API.Extensions;
 using Core.Entities;
@@ -7,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-public class AccountController(SignInManager<AppUser> signInManager): BaseApiController
+public class AccountController(SignInManager<AppUser> signInManager) : BaseApiController
 {
     [HttpPost("register")]
     public async Task<ActionResult> Register(RegisterDto registerDto)
@@ -21,17 +22,17 @@ public class AccountController(SignInManager<AppUser> signInManager): BaseApiCon
         };
 
         var result = await signInManager.UserManager.CreateAsync(user, registerDto.Password);
-        
+
         if (!result.Succeeded)
         {
-            foreach(var error in result.Errors)
+            foreach (var error in result.Errors)
             {
                 ModelState.AddModelError(error.Code, error.Description);
             }
 
             return ValidationProblem();
         }
-        
+
         return Ok();
     }
 
@@ -46,18 +47,25 @@ public class AccountController(SignInManager<AppUser> signInManager): BaseApiCon
     [HttpGet("user-info")]
     public async Task<ActionResult> GetUserInfor()
     {
-        if(User.Identity?.IsAuthenticated == false)
+        if (User.Identity?.IsAuthenticated == false)
             return NoContent();
 
         var user = await signInManager.UserManager.GetUserByEmailWithAddress(User);
-        
-        return Ok(new {user.FirstName, user.LastName, user.Email, Address = user.Address?.ToDto()});
+
+        return Ok(new
+        {
+            user.FirstName,
+            user.LastName,
+            user.Email,
+            Address = user.Address?.ToDto(),
+            Roles = User.FindFirstValue(ClaimTypes.Role)
+        });
     }
 
     [HttpGet("auth-status")]
     public ActionResult GetAuthState()
     {
-        return Ok(new {IsAuthenticated = User.Identity?.IsAuthenticated ?? false});
+        return Ok(new { IsAuthenticated = User.Identity?.IsAuthenticated ?? false });
     }
 
     [Authorize]
@@ -66,7 +74,7 @@ public class AccountController(SignInManager<AppUser> signInManager): BaseApiCon
     {
         var user = await signInManager.UserManager.GetUserByEmailWithAddress(User);
 
-        if(user.Address == null)
+        if (user.Address == null)
         {
             user.Address = addressDto.ToEntity();
         }
@@ -77,7 +85,7 @@ public class AccountController(SignInManager<AppUser> signInManager): BaseApiCon
 
         var result = await signInManager.UserManager.UpdateAsync(user);
 
-        if(!result.Succeeded) return BadRequest("Problem updating the user");
+        if (!result.Succeeded) return BadRequest("Problem updating the user");
 
         return Ok(user.Address.ToDto());
     }
