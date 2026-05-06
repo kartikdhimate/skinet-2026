@@ -7,9 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-
-public class ProductsController(IUnitOfWork unitOfWork): BaseApiController
+public class ProductsController(IUnitOfWork unitOfWork) : BaseApiController
 {
+    [Cache(600)]
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<Product>>> GetProducts([FromQuery] ProductSpecParams specParams)
     {
@@ -18,6 +18,7 @@ public class ProductsController(IUnitOfWork unitOfWork): BaseApiController
         return await CreatePagedResult(unitOfWork.Repository<Product>(), spec, specParams.PageIndex, specParams.PageSize);
     }
 
+    [Cache(600)]
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Product>> GetProduct(int id)
     {
@@ -28,29 +29,31 @@ public class ProductsController(IUnitOfWork unitOfWork): BaseApiController
         return product;
     }
 
+    [InvalidateCache("api/products|")]
     [Authorize(Roles = "Admin")]
     [HttpPost]
     public async Task<ActionResult<Product>> CreateProduct(Product product)
     {
         unitOfWork.Repository<Product>().Add(product);
 
-        if(await unitOfWork.Complete())
+        if (await unitOfWork.Complete())
         {
-            return CreatedAtAction(nameof(GetProduct),new {id=product.Id}, product);
+            return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
         }
 
         return BadRequest("Problem creating product");
     }
 
+    [InvalidateCache("api/products|")]
     [Authorize(Roles = "Admin")]
     [HttpPut("{id:int}")]
     public async Task<ActionResult> UpdateProduct(int id, Product product)
     {
-        if(id!=product.Id || !ProductExists(id)) return BadRequest("Cannot update this product");
+        if (id != product.Id || !ProductExists(id)) return BadRequest("Cannot update this product");
 
         unitOfWork.Repository<Product>().Update(product);
 
-        if(await unitOfWork.Complete())
+        if (await unitOfWork.Complete())
         {
             return NoContent();
         }
@@ -58,6 +61,7 @@ public class ProductsController(IUnitOfWork unitOfWork): BaseApiController
         return BadRequest("Problem updating product");
     }
 
+    [InvalidateCache("api/products|")]
     [Authorize(Roles = "Admin")]
     [HttpDelete("{id:int}")]
     public async Task<ActionResult> DeleteProduct(int id)
@@ -68,7 +72,7 @@ public class ProductsController(IUnitOfWork unitOfWork): BaseApiController
 
         unitOfWork.Repository<Product>().Remove(product);
 
-        if(await unitOfWork.Complete())
+        if (await unitOfWork.Complete())
         {
             return NoContent();
         }
@@ -76,6 +80,7 @@ public class ProductsController(IUnitOfWork unitOfWork): BaseApiController
         return BadRequest("Problem deleting product");
     }
 
+    [Cache(10000)]
     [HttpGet("brands")]
     public async Task<ActionResult<IReadOnlyList<string>>> GetBrangs()
     {
@@ -86,6 +91,7 @@ public class ProductsController(IUnitOfWork unitOfWork): BaseApiController
         return Ok(brands);
     }
 
+    [Cache(10000)]
     [HttpGet("types")]
     public async Task<ActionResult<IReadOnlyList<string>>> GetTypes()
     {

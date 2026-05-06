@@ -24,8 +24,8 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddCors();
 builder.Services.AddSingleton<IConnectionMultiplexer>(config =>
 {
-    var connectionString =builder.Configuration.GetConnectionString("Redis");
-    if(string.IsNullOrWhiteSpace(connectionString))
+    var connectionString = builder.Configuration.GetConnectionString("Redis");
+    if (string.IsNullOrWhiteSpace(connectionString))
     {
         throw new Exception("Redis connection string is not configured.");
     }
@@ -33,6 +33,8 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(config =>
     return ConnectionMultiplexer.Connect(configuration);
 });
 builder.Services.AddSingleton<ICartService, CartService>();
+builder.Services.AddSingleton<IResponseCacheService, ResponseCacheService>();
+
 builder.Services.AddAuthorization();
 builder.Services.AddIdentityApiEndpoints<AppUser>()
     .AddRoles<IdentityRole>()
@@ -44,7 +46,7 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 app.UseMiddleware<ExceptionMiddleware>();
-app.UseCors(x=>x.AllowAnyHeader().AllowAnyMethod().AllowCredentials()
+app.UseCors(x => x.AllowAnyHeader().AllowAnyMethod().AllowCredentials()
     .WithOrigins("http://localhost:4200", "https://localhost:4200"));
 
 app.UseAuthentication();
@@ -62,7 +64,7 @@ try
 {
     using var scope = app.Services.CreateScope();
     var services = scope.ServiceProvider;
-    var context=services.GetRequiredService<StoreContext>();
+    var context = services.GetRequiredService<StoreContext>();
     var userManager = services.GetRequiredService<UserManager<AppUser>>();
     await context.Database.MigrateAsync();
     await StoreContextSeed.SeedAsync(context, userManager);
